@@ -4,6 +4,12 @@
 
 using namespace std;
 
+/*
+ *
+ * 日志对象。
+ *
+ */
+
 Log::Log()
 {
 

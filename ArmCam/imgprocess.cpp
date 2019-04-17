@@ -75,13 +75,14 @@ cv::Mat ImgProcess::toBlur(Mat src)
     blur(src,temp,Size(7,7));
     return temp;
 }
-
+//读取种子文件
 void ImgProcess::loadCascade()
 {
     this->cascade.load(this->cascadeFile);
     cout << "Loading :\"" << this->cascadeFile << "\" succeed" << endl;
 }
 
+//人脸识别处理代码，源于opencv例子
 int ImgProcess::toFaceDetect(double scale)
 {
     Mat &img = this->frame;

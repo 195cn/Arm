@@ -1,6 +1,11 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "QDateTime"
+/*
+ *
+ * 主窗体，包含按键控制，视频显示界面。
+ *
+ */
 #include "imgprocess.h"
 #include "log.h"
 
@@ -12,7 +17,7 @@ MainWindow::MainWindow(QWidget *parent) :
     setWindowTitle("ArmCam");
     timer=new QTimer(this);
     timerLog = new QTimer(this);
-
+    //信号槽
     connect(timer,SIGNAL(timeout()),this,SLOT(ReadFrame()),Qt::UniqueConnection);
     connect(ui->openCam, SIGNAL(clicked()), this, SLOT(openCam_clicked()),Qt::UniqueConnection);  //打开摄像头
     connect(ui->closeCam, SIGNAL(clicked()), this, SLOT(closeCam_clicked()),Qt::UniqueConnection);  //关闭摄像头
@@ -25,7 +30,7 @@ MainWindow::~MainWindow()
 {
     delete ui;
 }
-
+//视频帧读取：包含读帧，opencv转qt图像，填充适配label，显示，录像
 void MainWindow::ReadFrame()
 {
     Mat frame = process.getFrame();
@@ -45,7 +50,7 @@ void MainWindow::ReadFrame()
 
     //将图片显示到label上
     ui->label->setPixmap(fitpixmap);
-//    ui->label->setPixmap(pixmap);
+    //    ui->label->setPixmap(pixmap);
     if(takeVideoFlag)
     {
         process.writeVideo();
@@ -53,7 +58,7 @@ void MainWindow::ReadFrame()
 }
 
 
-
+//开启摄像头按钮：开启摄像头，读取人脸识别种子，创建log文件，设定计时器
 void MainWindow::openCam_clicked()
 {
     if(process.isCamOpened())
@@ -76,14 +81,14 @@ void MainWindow::openCam_clicked()
         timerLog->start(75*process.getFps());//开启日志定时器，75倍周期采样 = 3s
     }
 }
-
+//关闭摄像头按钮
 void MainWindow::closeCam_clicked()
 {
     timer->stop();//关闭定时器
     timerLog->stop();
     process.closeCam();//释放视频
 }
-
+//录像按钮
 void MainWindow::takeVideo_clicked()
 {
     cout << "Prepare save video." << endl;
@@ -102,31 +107,30 @@ void MainWindow::takeVideo_clicked()
     }
 
 }
-
+//停止录像按钮
 void MainWindow::stopVideo_clicked()
 {
     takeVideoFlag = false;
     process.stopWrite();
 }
-
+//生成并写日志
 void MainWindow::writeLog()
 {
     if(process.isCamOpened())
     {
-        //None
-    }
-    else
-    {
-        //创建每条日志
-        cout << "创建一条日志" << endl;
-        //计算平均人数
-        log.averageNum();
-        QDateTime log_create_time =QDateTime::currentDateTime();
-        QString create_time_string =log_create_time.toString("yyyy.MM.dd-hh:mm:ss");
-        String log_time = create_time_string.toStdString();
-        cout << "日志写入,计数容器清空:" << log.getNumSize() << endl;
-        log.createLog(log_time);
-        log.writeFile();
+        //计算平均人数，如果检测到人脸则记录数据
+        if(log.averageNum() > 0)
+        {
+            cout << "创建一条日志" << endl;
+            QDateTime log_create_time =QDateTime::currentDateTime();
+            QString create_time_string =log_create_time.toString("yyyy.MM.dd-hh:mm:ss");
+            String log_time = create_time_string.toStdString();
+            cout << "日志写入,计数容器清空:" << log.getNumSize() << endl;
+            log.createLog(log_time);
+            log.writeFile();
+            cout << "写入完毕" << endl;
+        }
+        //清空计数容器
         log.cleanNum();
     }
 }
