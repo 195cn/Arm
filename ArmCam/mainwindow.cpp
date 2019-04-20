@@ -88,6 +88,7 @@ void MainWindow::closeCam_clicked()
     timerLog->stop();
     process.closeCam();//释放视频
     ui->label->setText("摄像头已关闭。");
+    MainWindow::stopVideo_clicked();//stop take video.
 }
 //录像按钮
 void MainWindow::takeVideo_clicked()
