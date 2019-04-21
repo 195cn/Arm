@@ -30,7 +30,7 @@ int Log::getNumSize()
 {
     return (int) this->num.size();
 }
-
+//计算容器内所有结果的平均数，取中位数据四舍五入计算人数
 int Log::averageNum()
 {
     vector<int> result = this->num;
@@ -77,12 +77,12 @@ int Log::averageNum()
 
     return this->data;
 }
-
+//根据时间创建日志内容
 void Log::createLog(string log_time)
 {
     this->log_message = "LOG:" + log_time + " NUM: " + to_string(this->data);
 }
-
+//创建日志文件
 void Log::createFile(string log_name)
 {
     this->file.open(log_name);

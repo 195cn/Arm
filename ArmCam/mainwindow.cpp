@@ -1,11 +1,13 @@
-#include "mainwindow.h"
-#include "ui_mainwindow.h"
-#include "QDateTime"
 /*
  *
  * 主窗体，包含按键控制，视频显示界面。
  *
  */
+
+#include "mainwindow.h"
+#include "ui_mainwindow.h"
+#include "QDateTime"
+#include "string"
 #include "imgprocess.h"
 #include "log.h"
 
@@ -15,15 +17,24 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
     setWindowTitle("ArmCam");
+
+    //初始化磁盘空间对西那个
+    this->storage = QStorageInfo::root();
+    refreshDiskSpace();
+
+    //计时器创建
     timer=new QTimer(this);
     timerLog = new QTimer(this);
+    timerDv = new QTimer(this);
     //信号槽
     connect(timer,SIGNAL(timeout()),this,SLOT(ReadFrame()),Qt::UniqueConnection);
     connect(ui->openCam, SIGNAL(clicked()), this, SLOT(openCam_clicked()),Qt::UniqueConnection);  //打开摄像头
     connect(ui->closeCam, SIGNAL(clicked()), this, SLOT(closeCam_clicked()),Qt::UniqueConnection);  //关闭摄像头
     connect(ui->takeVideo, SIGNAL(clicked()), this, SLOT(takeVideo_clicked()),Qt::UniqueConnection);    //开始录像
     connect(ui->stopVideo, SIGNAL(clicked()), this, SLOT(stopVideo_clicked()),Qt::UniqueConnection);    //停止录像
-    connect(timerLog,SIGNAL(timeout()),this,SLOT(writeLog()),Qt::UniqueConnection);                              //写日志
+    connect(timerLog,SIGNAL(timeout()),this,SLOT(writeLog()),Qt::UniqueConnection);                      //写日志
+    connect(timerDv,SIGNAL(timeout()),this,SLOT(memoryControl()),Qt::UniqueConnection);           //循环录像
+    connect(ui->openLog, SIGNAL(clicked()), this, SLOT(on_openLog_clicked()),Qt::UniqueConnection);    //打开日志窗体
 }
 
 MainWindow::~MainWindow()
@@ -73,7 +84,7 @@ void MainWindow::openCam_clicked()
         //每次打开摄像头创建一个log文件
         QDateTime log_file_create_time =QDateTime::currentDateTime();
         QString log_file_create_string =log_file_create_time.toString("yyyy.MM.dd-hh:mm:ss");
-        String log_name = "../log/log" + log_file_create_string.toStdString() + ".txt";
+        string log_name = "../log/log" + log_file_create_string.toStdString() + ".txt";
         log.createFile(log_name);
         cout << "日志文件创建完毕。" << endl;
 
@@ -88,7 +99,8 @@ void MainWindow::closeCam_clicked()
     timerLog->stop();
     process.closeCam();//释放视频
     ui->label->setText("摄像头已关闭。");
-    MainWindow::stopVideo_clicked();//stop take video.
+    log.closeFile();//释放log
+    MainWindow::stopVideo_clicked();//停止录像
 }
 //录像按钮
 void MainWindow::takeVideo_clicked()
@@ -97,6 +109,10 @@ void MainWindow::takeVideo_clicked()
     if(process.isCamOpened())
     {
         takeVideoFlag = true;
+        //timerDv->start(1000*60*10); //十分钟
+        timerDv->start(1000*10);        //测试用，十秒生成一个
+        refreshDiskSpace();
+
         //获取时间，生成录像文件名称
         QDateTime current_date_time =QDateTime::currentDateTime();
         QString current_date =current_date_time.toString("yyyy.MM.dd-hh:mm:ss");
@@ -113,6 +129,7 @@ void MainWindow::takeVideo_clicked()
 void MainWindow::stopVideo_clicked()
 {
     takeVideoFlag = false;
+    timerDv->stop();            //停止录像计时器
     process.stopWrite();
 }
 //生成并写日志
@@ -135,4 +152,40 @@ void MainWindow::writeLog()
         //清空计数容器
         log.cleanNum();
     }
+}
+
+void MainWindow::memoryControl()
+{
+    if(getAvailabelDiskMB() < 500)            //磁盘可用空间小于500MB视为空间不足
+    {
+        //删除第一个录像文件
+        myFile.deleteDV();
+    }
+    //myFile.deleteDV();            //测试用
+    MainWindow::stopVideo_clicked();
+    MainWindow::takeVideo_clicked();
+}
+//获取磁盘生育空间
+int MainWindow::getAvailabelDiskMB()
+{
+    int availableMemory;
+    this->storage.refresh();
+    availableMemory = this->storage.bytesAvailable()/1000/1000;
+    cout << "Available:" << availableMemory << "MB" << endl;
+    return availableMemory;
+}
+//在label中显示磁盘剩余空间
+void MainWindow::refreshDiskSpace()
+{
+    string disk_data = "SD:" + std::to_string(getAvailabelDiskMB()) + "MB";
+    QString disk_data_qstring = QString::fromStdString(disk_data);
+    ui->label_disk->setText(disk_data_qstring);
+}
+//打开log窗口
+void MainWindow::on_openLog_clicked()
+{
+    this->logwin.show();
+    //出现过无法重现的bug，有的时候不读取最新文件，现在可以使用但未知原理。
+    //在closeCam里面添加了释放log文件有些效果
+    this->logwin.refreshLog();
 }

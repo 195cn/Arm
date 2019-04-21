@@ -28,15 +28,20 @@ SOURCES += main.cpp\
     cvpic.cpp \
     cvcam.cpp \
     imgprocess.cpp \
-    log.cpp
+    log.cpp \
+    myfile.cpp \
+    logwindow.cpp
 
 HEADERS  += mainwindow.h \
     cvpic.h \
     cvcam.h \
     imgprocess.h \
-    log.h
+    log.h \
+    myfile.h \
+    logwindow.h
 
-FORMS    += mainwindow.ui
+FORMS    += mainwindow.ui \
+    logwindow.ui
 
 INCLUDEPATH += /usr/local/opencv3.4.5/include \
                 /usr/local/opencv3.4.5/include/opencv \
